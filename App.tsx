@@ -1,20 +1,39 @@
+// Importar la definición del background task antes de todo
+import './services/notifications';
+
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { setupNotifications, registerBackgroundFetch } from './services/notifications';
+import TabNavigator from './navigation/TabNavigator';
+import { COLORS } from './constants/theme';
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      retryDelay: 1000,
+    },
   },
 });
+
+export default function App() {
+  useEffect(() => {
+    (async () => {
+      const granted = await setupNotifications();
+      if (granted) {
+        await registerBackgroundFetch();
+      }
+    })();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <NavigationContainer>
+        <StatusBar style="light" />
+        <TabNavigator />
+      </NavigationContainer>
+    </QueryClientProvider>
+  );
+}
