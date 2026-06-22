@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
-import type { FDMatch, FDMatchesResponse } from '../types/api';
+import type { FDMatch, FDMatchesResponse, GroupStanding, StandingsResponse } from '../types/api';
 
 const client = axios.create({
   baseURL: 'https://api.football-data.org/v4',
@@ -31,6 +31,21 @@ export function isLive(status: string): boolean {
 export function isFinished(status: string): boolean {
   return ['FINISHED', 'AWARDED'].includes(status);
 }
+
+export async function fetchStandings(): Promise<GroupStanding[]> {
+  const { data } = await client.get<StandingsResponse>('/competitions/WC/standings', {
+    params: { season: CONFIG.WORLD_CUP_SEASON },
+  });
+  return (data.standings ?? []).filter((s) => s.type === 'TOTAL');
+}
+
+export const KNOCKOUT_STAGES = [
+  { key: 'LAST_16', label: '16avos' },
+  { key: 'QUARTER_FINALS', label: 'Cuartos' },
+  { key: 'SEMI_FINALS', label: 'Semis' },
+  { key: 'THIRD_PLACE', label: '3er Lugar' },
+  { key: 'FINAL', label: 'Final' },
+] as const;
 
 export function getRoundLabel(stage: string, group: string | null): string {
   const base: Record<string, string> = {

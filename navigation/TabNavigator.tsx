@@ -3,6 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import CalendarioScreen from '../screens/CalendarioScreen';
 import ResultadosScreen from '../screens/ResultadosScreen';
+import GruposScreen from '../screens/GruposScreen';
+import BracketScreen from '../screens/BracketScreen';
 import { COLORS } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
@@ -16,13 +18,13 @@ export default function TabNavigator() {
           backgroundColor: COLORS.tabBar,
           borderTopColor: COLORS.tabBarBorder,
           borderTopWidth: 1,
-          height: 60,
+          height: 62,
           paddingBottom: 8,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
         },
       }}
@@ -32,7 +34,7 @@ export default function TabNavigator() {
         component={CalendarioScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
+            <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
@@ -41,7 +43,25 @@ export default function TabNavigator() {
         component={ResultadosScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="trophy" size={size} color={color} />
+            <Ionicons name="trophy-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Grupos"
+        component={GruposScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Bracket"
+        component={BracketScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="podium-outline" size={size} color={color} />
           ),
         }}
       />

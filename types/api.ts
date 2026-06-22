@@ -41,3 +41,28 @@ export interface FDMatchesResponse {
   count: number;
   matches: FDMatch[];
 }
+
+export interface StandingEntry {
+  position: number;
+  team: FDTeam;
+  playedGames: number;
+  won: number;
+  draw: number;
+  lost: number;
+  points: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  form: string | null;
+}
+
+export interface GroupStanding {
+  stage: string;
+  type: string;
+  group: string | null;
+  table: StandingEntry[];
+}
+
+export interface StandingsResponse {
+  standings: GroupStanding[];
+}
