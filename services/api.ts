@@ -1,51 +1,49 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
-import type { Fixture, FixtureEvent } from '../types/api';
+import type { FDMatch, FDMatchesResponse } from '../types/api';
 
 const client = axios.create({
-  baseURL: 'https://api-football-v1.p.rapidapi.com/v3',
+  baseURL: 'https://api.football-data.org/v4',
   headers: {
-    'x-rapidapi-host': CONFIG.RAPIDAPI_HOST,
-    'x-rapidapi-key': CONFIG.RAPIDAPI_KEY,
+    'X-Auth-Token': CONFIG.API_TOKEN,
   },
   timeout: 10_000,
 });
 
-export async function fetchAllFixtures(): Promise<Fixture[]> {
-  const { data } = await client.get('/fixtures', {
-    params: {
-      league: CONFIG.WORLD_CUP_LEAGUE_ID,
-      season: CONFIG.WORLD_CUP_SEASON,
-    },
+export async function fetchAllMatches(): Promise<FDMatch[]> {
+  const { data } = await client.get<FDMatchesResponse>('/competitions/WC/matches', {
+    params: { season: CONFIG.WORLD_CUP_SEASON },
   });
-  return data.response ?? [];
+  return data.matches ?? [];
 }
 
-export async function fetchLiveFixtures(): Promise<Fixture[]> {
-  const { data } = await client.get('/fixtures', {
-    params: {
-      live: 'all',
-      league: CONFIG.WORLD_CUP_LEAGUE_ID,
-    },
+export async function fetchLiveMatches(): Promise<FDMatch[]> {
+  const { data } = await client.get<FDMatchesResponse>('/competitions/WC/matches', {
+    params: { season: CONFIG.WORLD_CUP_SEASON, status: 'IN_PLAY,PAUSED,EXTRA_TIME,PENALTY_SHOOTOUT' },
   });
-  return data.response ?? [];
+  return data.matches ?? [];
 }
 
-export async function fetchFixtureEvents(fixtureId: number): Promise<FixtureEvent[]> {
-  const { data } = await client.get('/fixtures/events', {
-    params: { fixture: fixtureId },
-  });
-  return data.response ?? [];
+export function isLive(status: string): boolean {
+  return ['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT'].includes(status);
 }
 
-export function isLive(short: string): boolean {
-  return ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'LIVE'].includes(short);
+export function isFinished(status: string): boolean {
+  return ['FINISHED', 'AWARDED'].includes(status);
 }
 
-export function isFinished(short: string): boolean {
-  return ['FT', 'AET', 'PEN', 'AWD', 'WO'].includes(short);
-}
-
-export function isScheduled(short: string): boolean {
-  return short === 'NS';
+export function getRoundLabel(stage: string, group: string | null): string {
+  const base: Record<string, string> = {
+    GROUP_STAGE: 'Fase de Grupos',
+    LAST_16: 'Octavos de Final',
+    QUARTER_FINALS: 'Cuartos de Final',
+    SEMI_FINALS: 'Semifinales',
+    THIRD_PLACE: 'Tercer Lugar',
+    FINAL: 'Final',
+  };
+  const label = base[stage] ?? stage;
+  if (stage === 'GROUP_STAGE' && group) {
+    return `${label} · ${group.replace('GROUP_', 'Grupo ')}`;
+  }
+  return label;
 }

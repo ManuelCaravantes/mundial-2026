@@ -3,11 +3,10 @@ import { View, Text, Animated, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/theme';
 
 interface Props {
-  elapsed?: number | null;
   short?: string;
 }
 
-export default function LiveBadge({ elapsed, short }: Props) {
+export default function LiveBadge({ short }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -21,40 +20,22 @@ export default function LiveBadge({ elapsed, short }: Props) {
     return () => anim.stop();
   }, [pulse]);
 
-  const label = short === 'HT' ? 'Descanso' : short === 'ET' ? 'Prórroga' : 'EN VIVO';
+  const label =
+    short === 'PAUSED' ? 'Descanso' :
+    short === 'EXTRA_TIME' ? 'Prórroga' :
+    short === 'PENALTY_SHOOTOUT' ? 'Penales' :
+    'EN VIVO';
 
   return (
     <View style={styles.row}>
       <Animated.View style={[styles.dot, { opacity: pulse }]} />
       <Text style={styles.text}>{label}</Text>
-      {elapsed != null && short !== 'HT' && (
-        <Text style={styles.elapsed}>{elapsed}'</Text>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLORS.live,
-  },
-  text: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.live,
-    letterSpacing: 0.5,
-  },
-  elapsed: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.live,
-  },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.live },
+  text: { fontSize: 11, fontWeight: '700', color: COLORS.live, letterSpacing: 0.5 },
 });

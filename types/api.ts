@@ -1,62 +1,43 @@
-export type FixtureStatusShort =
-  | 'NS' | '1H' | 'HT' | '2H' | 'ET' | 'BT' | 'P'
-  | 'FT' | 'AET' | 'PEN' | 'SUSP' | 'INT' | 'PST'
-  | 'CANC' | 'ABD' | 'AWD' | 'WO' | 'LIVE';
+export type MatchStatus =
+  | 'SCHEDULED' | 'TIMED' | 'IN_PLAY' | 'PAUSED'
+  | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT' | 'FINISHED'
+  | 'SUSPENDED' | 'CANCELLED' | 'POSTPONED' | 'AWARDED';
 
-export interface FixtureStatus {
-  long: string;
-  short: FixtureStatusShort;
-  elapsed: number | null;
-}
+export type MatchWinner = 'HOME_TEAM' | 'AWAY_TEAM' | 'DRAW' | null;
+export type MatchDuration = 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT';
+export type MatchStage =
+  | 'GROUP_STAGE' | 'LAST_16' | 'QUARTER_FINALS'
+  | 'SEMI_FINALS' | 'THIRD_PLACE' | 'FINAL';
 
-export interface Team {
+export interface FDTeam {
   id: number;
   name: string;
-  logo: string;
-  winner: boolean | null;
+  shortName: string;
+  tla: string;
+  crest: string;
 }
 
-export interface Goals {
-  home: number | null;
-  away: number | null;
+export interface FDScore {
+  winner: MatchWinner;
+  duration: MatchDuration;
+  fullTime: { home: number | null; away: number | null };
+  halfTime: { home: number | null; away: number | null };
 }
 
-export interface Fixture {
-  fixture: {
-    id: number;
-    referee: string | null;
-    timezone: string;
-    date: string;
-    timestamp: number;
-    status: FixtureStatus;
-  };
-  league: {
-    id: number;
-    name: string;
-    country: string;
-    logo: string;
-    season: number;
-    round: string;
-  };
-  teams: {
-    home: Team;
-    away: Team;
-  };
-  goals: Goals;
-  score: {
-    halftime: Goals;
-    fulltime: Goals;
-    extratime: Goals;
-    penalty: Goals;
-  };
+export interface FDMatch {
+  id: number;
+  utcDate: string;
+  status: MatchStatus;
+  matchday: number | null;
+  stage: MatchStage;
+  group: string | null;
+  lastUpdated: string;
+  homeTeam: FDTeam;
+  awayTeam: FDTeam;
+  score: FDScore;
 }
 
-export interface FixtureEvent {
-  time: { elapsed: number; extra: number | null };
-  team: { id: number; name: string; logo: string };
-  player: { id: number; name: string };
-  assist: { id: number | null; name: string | null };
-  type: 'Goal' | 'Card' | 'subst' | 'Var';
-  detail: string;
-  comments: string | null;
+export interface FDMatchesResponse {
+  count: number;
+  matches: FDMatch[];
 }

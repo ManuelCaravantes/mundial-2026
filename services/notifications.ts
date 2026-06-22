@@ -3,13 +3,12 @@ import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { fetchLiveFixtures } from './api';
-import type { Fixture } from '../types/api';
+import { fetchLiveMatches } from './api';
+import type { FDMatch } from '../types/api';
 
 const TASK_ID = 'wc-live-check';
-const STORAGE_KEY = 'wc_live_goals';
+const STORAGE_KEY = 'wc_live_state';
 
-// Comportamiento cuando llega una notificación con la app abierta
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -20,11 +19,10 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Definición de la tarea en background (debe estar al nivel de módulo)
 TaskManager.defineTask(TASK_ID, async () => {
   try {
-    const fixtures = await fetchLiveFixtures();
-    await checkAndNotify(fixtures);
+    const matches = await fetchLiveMatches();
+    await checkAndNotify(matches);
     return BackgroundFetch.BackgroundFetchResult.NewData;
   } catch {
     return BackgroundFetch.BackgroundFetchResult.Failed;
@@ -45,7 +43,6 @@ export async function setupNotifications(): Promise<boolean> {
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
-
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
 }
@@ -59,48 +56,52 @@ export async function registerBackgroundFetch(): Promise<void> {
 
   try {
     await BackgroundFetch.registerTaskAsync(TASK_ID, {
-      minimumInterval: 15 * 60, // mínimo permitido por Android: 15 min
+      minimumInterval: 15 * 60,
       stopOnTerminate: false,
       startOnBoot: true,
     });
   } catch {
-    // Ya estaba registrada
+    // ya registrada
   }
 }
 
-export async function checkAndNotify(fixtures: Fixture[]): Promise<void> {
+interface StoredState {
+  status: string;
+  goals: number;
+}
+
+export async function checkAndNotify(matches: FDMatch[]): Promise<void> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
-  const stored: Record<string, number> = raw ? JSON.parse(raw) : {};
+  const stored: Record<string, StoredState> = raw ? JSON.parse(raw) : {};
   const updated = { ...stored };
 
-  for (const f of fixtures) {
-    const id = String(f.fixture.id);
-    const homeGoals = f.goals.home ?? 0;
-    const awayGoals = f.goals.away ?? 0;
-    const total = homeGoals + awayGoals;
+  for (const m of matches) {
+    const id = String(m.id);
+    const homeGoals = m.score.fullTime.home ?? 0;
+    const awayGoals = m.score.fullTime.away ?? 0;
+    const totalGoals = homeGoals + awayGoals;
     const prev = stored[id];
 
-    if (prev === undefined) {
+    if (!prev) {
       await schedule({
         title: '⚡ Partido en vivo · Mundial 2026',
-        body: `${f.teams.home.name} vs ${f.teams.away.name}`,
+        body: `${m.homeTeam.shortName} vs ${m.awayTeam.shortName}`,
         channelId: 'wc-updates',
-        data: { fixtureId: f.fixture.id },
+        data: { matchId: m.id },
       });
-    } else if (total > prev) {
+    } else if (totalGoals > prev.goals) {
       await schedule({
         title: '⚽ ¡GOOOL! · Mundial 2026',
-        body: `${f.teams.home.name}  ${homeGoals} — ${awayGoals}  ${f.teams.away.name}`,
+        body: `${m.homeTeam.shortName}  ${homeGoals} — ${awayGoals}  ${m.awayTeam.shortName}`,
         channelId: 'wc-goals',
-        data: { fixtureId: f.fixture.id },
+        data: { matchId: m.id },
       });
     }
 
-    updated[id] = total;
+    updated[id] = { status: m.status, goals: totalGoals };
   }
 
-  // Limpiar partidos que ya no están en vivo
-  const liveIds = new Set(fixtures.map((f) => String(f.fixture.id)));
+  const liveIds = new Set(matches.map((m) => String(m.id)));
   for (const key of Object.keys(updated)) {
     if (!liveIds.has(key)) delete updated[key];
   }
@@ -121,6 +122,6 @@ async function schedule(params: {
       data: params.data,
       ...(Platform.OS === 'android' && { channelId: params.channelId }),
     },
-    trigger: null, // inmediata
+    trigger: null,
   });
 }

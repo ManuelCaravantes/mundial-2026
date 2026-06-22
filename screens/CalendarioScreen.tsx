@@ -4,46 +4,35 @@ import {
   TouchableOpacity, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAllFixtures } from '../services/api';
+import { fetchAllMatches, isLive, isFinished } from '../services/api';
 import { COLORS, SPACING } from '../constants/theme';
 import MatchCard from '../components/MatchCard';
-import type { Fixture } from '../types/api';
+import type { FDMatch } from '../types/api';
 
 type Filter = 'todos' | 'hoy' | 'proximos';
 
-interface Section {
-  title: string;
-  data: Fixture[];
-}
+interface Section { title: string; data: FDMatch[] }
 
-function toDateKey(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es-MX', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
+function toDateKey(utcDate: string): string {
+  return new Date(utcDate).toLocaleDateString('es-MX', {
+    weekday: 'short', day: 'numeric', month: 'short',
   }).toUpperCase();
 }
 
-function isToday(dateStr: string): boolean {
-  const d = new Date(dateStr);
+function isToday(utcDate: string): boolean {
+  const d = new Date(utcDate);
   const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
+  return d.getFullYear() === now.getFullYear() &&
     d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
-}
-
-function isUpcoming(dateStr: string): boolean {
-  return new Date(dateStr) >= new Date();
+    d.getDate() === now.getDate();
 }
 
 export default function CalendarioScreen() {
   const [filter, setFilter] = useState<Filter>('todos');
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['fixtures'],
-    queryFn: fetchAllFixtures,
+    queryKey: ['matches'],
+    queryFn: fetchAllMatches,
     staleTime: 5 * 60_000,
   });
 
@@ -52,23 +41,23 @@ export default function CalendarioScreen() {
 
     let filtered = data;
     if (filter === 'hoy') {
-      filtered = data.filter((f) => isToday(f.fixture.date));
+      filtered = data.filter((m) => isToday(m.utcDate));
     } else if (filter === 'proximos') {
-      filtered = data.filter((f) => isUpcoming(f.fixture.date) && f.fixture.status.short === 'NS');
+      filtered = data.filter((m) => !isLive(m.status) && !isFinished(m.status));
     }
 
-    const map: Record<string, Fixture[]> = {};
-    for (const f of filtered) {
-      const key = toDateKey(f.fixture.date);
+    const map: Record<string, FDMatch[]> = {};
+    for (const m of filtered) {
+      const key = toDateKey(m.utcDate);
       if (!map[key]) map[key] = [];
-      map[key].push(f);
+      map[key].push(m);
     }
 
     return Object.entries(map)
-      .sort(([, a], [, b]) => a[0].fixture.timestamp - b[0].fixture.timestamp)
-      .map(([title, fixtures]) => ({
+      .sort(([, a], [, b]) => new Date(a[0].utcDate).getTime() - new Date(b[0].utcDate).getTime())
+      .map(([title, matches]) => ({
         title,
-        data: fixtures.sort((a, b) => a.fixture.timestamp - b.fixture.timestamp),
+        data: matches.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()),
       }));
   }, [data, filter]);
 
@@ -80,12 +69,10 @@ export default function CalendarioScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>🏆 Mundial 2026</Text>
       </View>
 
-      {/* Filtros */}
       <View style={styles.filterRow}>
         {filters.map(({ key, label }) => (
           <TouchableOpacity
@@ -110,7 +97,7 @@ export default function CalendarioScreen() {
       {error && !isLoading && (
         <View style={styles.center}>
           <Text style={styles.errorText}>Error al cargar los partidos.</Text>
-          <Text style={styles.errorSub}>Verifica tu API key en config.ts</Text>
+          <Text style={styles.errorSub}>Verifica tu token en .env</Text>
         </View>
       )}
 
@@ -123,8 +110,8 @@ export default function CalendarioScreen() {
       {!isLoading && sections.length > 0 && (
         <SectionList
           sections={sections}
-          keyExtractor={(item) => String(item.fixture.id)}
-          renderItem={({ item }) => <MatchCard fixture={item} />}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => <MatchCard match={item} />}
           renderSectionHeader={({ section }) => (
             <Text style={styles.sectionHeader}>{section.title}</Text>
           )}
@@ -145,78 +132,25 @@ export default function CalendarioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    paddingTop: 56,
-    paddingBottom: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    letterSpacing: 0.3,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm,
-    gap: SPACING.sm,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: { paddingTop: 56, paddingBottom: SPACING.sm, paddingHorizontal: SPACING.md },
+  title: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: 0.3 },
+  filterRow: { flexDirection: 'row', paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, gap: SPACING.sm },
   filterBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    backgroundColor: COLORS.card,
+    paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20,
+    borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
   },
-  filterBtnActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  filterText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  filterTextActive: {
-    color: '#030A1C',
-    fontWeight: '700',
-  },
+  filterBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  filterText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
+  filterTextActive: { color: '#030A1C', fontWeight: '700' },
   sectionHeader: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.primary,
-    letterSpacing: 0.8,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    marginTop: SPACING.sm,
+    fontSize: 12, fontWeight: '700', color: COLORS.primary,
+    letterSpacing: 0.8, paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm, marginTop: SPACING.sm,
   },
-  listContent: {
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.xl,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-  },
-  loadingText: {
-    color: COLORS.textSecondary,
-    marginTop: SPACING.sm,
-  },
-  errorText: {
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  errorSub: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-  },
+  listContent: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.xl },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.sm },
+  loadingText: { color: COLORS.textSecondary, marginTop: SPACING.sm },
+  errorText: { color: COLORS.textPrimary, fontWeight: '600', fontSize: 15 },
+  errorSub: { color: COLORS.textSecondary, fontSize: 13 },
 });
