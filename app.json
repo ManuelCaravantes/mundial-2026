@@ -23,6 +23,15 @@
         "android.permission.WAKE_LOCK"
       ]
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/03be8885-3531-42b0-a731-4d580587edf8",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
     "plugins": [
       [
         "expo-notifications",
@@ -36,7 +45,8 @@
       [
         "expo-background-fetch"
       ],
-      "expo-font"
+      "expo-font",
+      "expo-updates"
     ],
     "web": {
       "favicon": "./assets/favicon.png"
