@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
-import type { FDMatch, FDMatchesResponse, GroupStanding, StandingEntry } from '../types/api';
+import type { FDMatch, FDMatchesResponse, GroupStanding, StandingEntry, Scorer, ScorersResponse, TeamStat } from '../types/api';
 
 const client = axios.create({
   baseURL: 'https://api.football-data.org/v4',
@@ -107,6 +107,46 @@ export function calculateGroupStandings(matches: FDMatch[]): GroupStanding[] {
 
       return { stage: 'GROUP_STAGE', type: 'TOTAL', group: groupName, table };
     });
+}
+
+export async function fetchScorers(limit = 50): Promise<Scorer[]> {
+  const { data } = await client.get<ScorersResponse>('/competitions/2000/scorers', {
+    params: { season: CONFIG.WORLD_CUP_SEASON, limit },
+  });
+  return data.scorers ?? [];
+}
+
+export function calculateTeamStats(matches: FDMatch[]): TeamStat[] {
+  const finished = matches.filter((m) => isFinished(m.status));
+  const map: Record<number, TeamStat> = {};
+
+  const init = (team: FDMatch['homeTeam']) => {
+    if (!map[team.id]) {
+      map[team.id] = { team, gamesPlayed: 0, goalsFor: 0, goalsAgainst: 0, cleanSheets: 0, wins: 0 };
+    }
+  };
+
+  for (const m of finished) {
+    init(m.homeTeam);
+    init(m.awayTeam);
+
+    const hg = m.score.fullTime.home ?? 0;
+    const ag = m.score.fullTime.away ?? 0;
+
+    map[m.homeTeam.id].gamesPlayed++;
+    map[m.homeTeam.id].goalsFor += hg;
+    map[m.homeTeam.id].goalsAgainst += ag;
+    if (ag === 0) map[m.homeTeam.id].cleanSheets++;
+    if (m.score.winner === 'HOME_TEAM') map[m.homeTeam.id].wins++;
+
+    map[m.awayTeam.id].gamesPlayed++;
+    map[m.awayTeam.id].goalsFor += ag;
+    map[m.awayTeam.id].goalsAgainst += hg;
+    if (hg === 0) map[m.awayTeam.id].cleanSheets++;
+    if (m.score.winner === 'AWAY_TEAM') map[m.awayTeam.id].wins++;
+  }
+
+  return Object.values(map).sort((a, b) => b.goalsFor - a.goalsFor);
 }
 
 export const KNOCKOUT_STAGES = [

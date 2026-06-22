@@ -5,6 +5,7 @@ import CalendarioScreen from '../screens/CalendarioScreen';
 import ResultadosScreen from '../screens/ResultadosScreen';
 import GruposScreen from '../screens/GruposScreen';
 import BracketScreen from '../screens/BracketScreen';
+import EstadisticasScreen from '../screens/EstadisticasScreen';
 import { COLORS } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
@@ -62,6 +63,15 @@ export default function TabNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="podium-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Stats"
+        component={EstadisticasScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bar-chart-outline" size={size} color={color} />
           ),
         }}
       />

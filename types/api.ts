@@ -42,6 +42,41 @@ export interface FDMatchesResponse {
   matches: FDMatch[];
 }
 
+export interface FDPlayer {
+  id: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  nationality: string;
+  section: string;
+  position: string | null;
+  shirtNumber: number | null;
+}
+
+export interface Scorer {
+  player: FDPlayer;
+  team: FDTeam;
+  playedMatches: number;
+  goals: number;
+  assists: number;
+  penalties: number | null;
+}
+
+export interface ScorersResponse {
+  count: number;
+  scorers: Scorer[];
+}
+
+export interface TeamStat {
+  team: FDTeam;
+  gamesPlayed: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  cleanSheets: number;
+  wins: number;
+}
+
 export interface StandingEntry {
   position: number;
   team: FDTeam;
