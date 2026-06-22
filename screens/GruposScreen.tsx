@@ -1,19 +1,24 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { fetchStandings } from '../services/api';
+import { fetchAllMatches, calculateGroupStandings } from '../services/api';
 import { COLORS, SPACING } from '../constants/theme';
 import GroupTable from '../components/GroupTable';
 
 export default function GruposScreen() {
-  const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['standings'],
-    queryFn: fetchStandings,
+  const { data: matches, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ['matches'],
+    queryFn: fetchAllMatches,
     staleTime: 5 * 60_000,
   });
+
+  const data = useMemo(
+    () => (matches ? calculateGroupStandings(matches) : undefined),
+    [matches]
+  );
 
   return (
     <View style={styles.container}>
