@@ -6,7 +6,7 @@ export type MatchStatus =
 export type MatchWinner = 'HOME_TEAM' | 'AWAY_TEAM' | 'DRAW' | null;
 export type MatchDuration = 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT';
 export type MatchStage =
-  | 'GROUP_STAGE' | 'LAST_16' | 'QUARTER_FINALS'
+  | 'GROUP_STAGE' | 'LAST_32' | 'LAST_16' | 'QUARTER_FINALS'
   | 'SEMI_FINALS' | 'THIRD_PLACE' | 'FINAL';
 
 export interface FDTeam {

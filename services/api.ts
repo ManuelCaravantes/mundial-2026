@@ -110,7 +110,8 @@ export function calculateGroupStandings(matches: FDMatch[]): GroupStanding[] {
 }
 
 export const KNOCKOUT_STAGES = [
-  { key: 'LAST_16', label: '16avos' },
+  { key: 'LAST_32', label: '16avos' },   // 32 equipos → 16  (16 partidos)
+  { key: 'LAST_16', label: '8avos' },    // 16 equipos → 8   ( 8 partidos)
   { key: 'QUARTER_FINALS', label: 'Cuartos' },
   { key: 'SEMI_FINALS', label: 'Semis' },
   { key: 'THIRD_PLACE', label: '3er Lugar' },
@@ -120,6 +121,7 @@ export const KNOCKOUT_STAGES = [
 export function getRoundLabel(stage: string, group: string | null): string {
   const base: Record<string, string> = {
     GROUP_STAGE: 'Fase de Grupos',
+    LAST_32: '16avos de Final',
     LAST_16: 'Octavos de Final',
     QUARTER_FINALS: 'Cuartos de Final',
     SEMI_FINALS: 'Semifinales',
